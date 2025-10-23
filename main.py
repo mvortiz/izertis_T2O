@@ -12,4 +12,4 @@ end_date = input( "fecha fin (aaaa-mm-dd): ")
 df_weather = pv.get_hourly_weater(client, rs, city_name, start_date, end_date)
 
 print( "Hourly Weather Data: ")
-print(df_weather.head())
+print(df_weather)

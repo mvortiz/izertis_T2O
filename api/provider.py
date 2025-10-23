@@ -48,7 +48,7 @@ def get_hourly_weater(client, session, name, start_date, end_date):
     params_hourly = {
         "latitude": lat,
         "longitude": lon,
-        "hourly": ["temperature_2m","rain"],
+        "hourly": ["temperature_2m","precipitation"],
         "start_date": start_date,
         "end_date": end_date
     }
@@ -57,14 +57,20 @@ def get_hourly_weater(client, session, name, start_date, end_date):
     response = responses[0]
     hourly = response.Hourly()
     time = pd.to_datetime(hourly.Time(), unit = "s", utc=True)
-    
     temp = hourly.Variables(0).ValuesAsNumpy()
     precip = hourly.Variables(1).ValuesAsNumpy()
     
-    df = pd.DataFrame({
-        "time": time,
-        "temperature (ºC)": temp,
-        "precipitation (mm)": precip
-    })
     
-    return df
+    hourly_data = {"date": pd.date_range(
+	start = pd.to_datetime(hourly.Time(), unit = "s", utc = True),
+	end = pd.to_datetime(hourly.TimeEnd(), unit = "s", utc = True),
+	freq = pd.Timedelta(seconds = hourly.Interval()),
+	inclusive = "left"
+    )}
+    
+    hourly_data["temperature (°C)"] = temp
+    hourly_data["rain (mm)"] = precip
+    hourly_dataframe = pd.DataFrame(data = hourly_data)
+
+    
+    return hourly_dataframe
