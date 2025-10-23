@@ -79,10 +79,10 @@ def get_hourly_weater(client, session, name, start_date, end_date):
     return hourly_dataframe
 
 
-def obtain_temp_statics(client,session, name, start_date, end_date, above_thr, below_thr):
+def obtain_temp_statistics(client,session, name, start_date, end_date, above_thr, below_thr):
    
     _, lat, lon = search_data_city(name, session)
-    params_statics = {
+    params_statistics = {
         "latitude": lat,
         "longitude": lon,
         "start_date": start_date,
@@ -90,8 +90,9 @@ def obtain_temp_statics(client,session, name, start_date, end_date, above_thr, b
         "daily": ["temperature_2m_mean", "temperature_2m_max","temperature_2m_min"],
         "hourly": ["temperature_2m"]
     }
-    responses = client.weather_api(ARCHIVE_PATH, params = params_statics)
+    responses = client.weather_api(ARCHIVE_PATH, params = params_statistics)
     response = responses[0]
+    
     daily = response.Daily()
     mean = daily.Variables(0).ValuesAsNumpy().tolist()
     max = daily.Variables(1).ValuesAsNumpy()
@@ -100,7 +101,6 @@ def obtain_temp_statics(client,session, name, start_date, end_date, above_thr, b
     temps = hourly.Variables(0).ValuesAsNumpy()
     
     average = numpy.mean(temps)
-    
     
     date_daily_range = pd.date_range(
 	start = pd.to_datetime(daily.Time(), unit = "s", utc = True),
@@ -115,7 +115,6 @@ def obtain_temp_statics(client,session, name, start_date, end_date, above_thr, b
 	inclusive = "left"
     )
     
-  
     date_list = date_daily_range.strftime("%Y-%m-%d").tolist()
     datetime_list = date_hourly_range.strftime("%Y-%m-%dT%H:%M").tolist()
     date_max_dict = { d: m for d, m in zip(datetime_list, temps)}
@@ -124,7 +123,6 @@ def obtain_temp_statics(client,session, name, start_date, end_date, above_thr, b
 
     max_temp = numpy.max(temps)
     date_max_temp = [k for k, v in date_max_dict.items() if v == max_temp][0]
- 
  
     min_temp = numpy.min(min)
     date_min_temp = [k for k, v in date_min_dict.items() if v == min_temp][0]
@@ -153,16 +151,17 @@ def obtain_temp_statics(client,session, name, start_date, end_date, above_thr, b
     print(json.dumps(json_object, indent=4))
 
 
-def obtain_rain_statics(client,session, name, start_date, end_date):
+def obtain_prec_statistics(client,session, name, start_date, end_date):
+    
     _, lat, lon = search_data_city(name, session)
-    params_statics = {
+    params_statistics = {
         "latitude": lat,
         "longitude": lon,
         "start_date": start_date,
         "end_date": end_date,
         "hourly": ["precipitation"]
     }
-    responses = client.weather_api(ARCHIVE_PATH, params = params_statics)
+    responses = client.weather_api(ARCHIVE_PATH, params = params_statistics)
     response = responses[0]
     hourly = response.Hourly()
     precs = hourly.Variables(0).ValuesAsNumpy().tolist()
@@ -183,15 +182,12 @@ def obtain_rain_statics(client,session, name, start_date, end_date):
         date_total_prec_dict[key] = date_total_prec_dict.get(key,0) + value
         all_prec_by_day_dict.setdefault(key, []).append(value)
     
-    
     days_with_prec = sum(1 for value in date_total_prec_dict.values() if value > 0)
-    
     
     max_prec = numpy.max(precs)
     date_max_precp = [k for k, v in all_prec_by_day_dict.items() if max_prec in v][0]
     
     values = date_total_prec_dict.values()
-    
     average = sum(values)/len(values)
     
     precs_stat = {
@@ -206,6 +202,7 @@ def obtain_rain_statics(client,session, name, start_date, end_date):
             "average": "{:.2f}".format(average)
         } 
     }
+    
     json_data = json.dumps(precs_stat)
     json_object = json.loads(json_data)
     print(json.dumps(json_object, indent=4))

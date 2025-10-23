@@ -15,7 +15,7 @@ def test_statics_temps():
     rs = client._session
     start = "2025-10-15"
     end = "2025-10-17"
-    result = pv.obtain_temp_statics(client, rs,"Madrid", start_date=start, end_date=end, above_thr=18, below_thr=16)
+    result = pv.obtain_temp_statistics(client, rs,"Madrid", start_date=start, end_date=end, above_thr=18, below_thr=16)
     
     data = json.loads(result)
     
