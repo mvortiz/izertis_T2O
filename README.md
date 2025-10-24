@@ -8,8 +8,8 @@ Este proyecto implementa un cliente en Python que se conecta a la API de Open-Me
 1. Clonar el repositorio:
    ```
    bash
-   git clone
-   cd
+   git clone git@github.com:mvortiz/izertis_T2O.git
+   cd izertis_T2O
    ```
 3. Instalar dependencias
    ```
