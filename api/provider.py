@@ -38,6 +38,7 @@ def search_data_city(name, session):
             return city, lat, lon
         else:
             print("City not found.")
+            return "", float(0), float(0)
             
     except Exception as e:
         print(f"error: {e}")
@@ -46,7 +47,8 @@ def search_data_city(name, session):
 def get_hourly_weater(client, session, name, start_date, end_date):
     
     _, lat, lon = search_data_city(name, session )
-    
+    if lat == lon == float(0) :
+        return 0
     params_hourly = {
         "latitude": lat,
         "longitude": lon,
@@ -61,13 +63,13 @@ def get_hourly_weater(client, session, name, start_date, end_date):
     temp = hourly.Variables(0).ValuesAsNumpy()
     precip = hourly.Variables(1).ValuesAsNumpy()
     
-    
-    hourly_data = {"date": pd.date_range(
+    date = pd.date_range(
 	start = pd.to_datetime(hourly.Time(), unit = "s", utc = True),
 	end = pd.to_datetime(hourly.TimeEnd(), unit = "s", utc = True),
 	freq = pd.Timedelta(seconds = hourly.Interval()),
 	inclusive = "left"
-    )}
+    )
+    hourly_data = {"date":date }
     
     hourly_data["city name"] = name
     hourly_data["latitude"] = lat
@@ -75,13 +77,36 @@ def get_hourly_weater(client, session, name, start_date, end_date):
     hourly_data["temperature (°C)"] = temp
     hourly_data["precipitations (mm)"] = precip
     hourly_dataframe = pd.DataFrame(data = hourly_data)
-    print(hourly_dataframe)
-    return hourly_dataframe
+    
+    date_list = date.strftime("%Y-%m-%dT%H:%M").tolist()
+    weather_info = {}
+    for key, tp, pp in zip(date_list, temp, precip):
+        t = "{:.2f}".format(numpy.float64.item(tp))
+        p = "{:.2f}".format(numpy.float64.item(pp))
+        weather_info.setdefault(key, []).append(({"temperature":t, "precipitations": p}))
+        
+    data = {
+        "city_name": name,
+        "latitude": lat,
+        "longitude": lon,
+        "weather info": weather_info
+    }
+    json_data = json.dumps(data)
+    json_object = json.loads(json_data)
+    data_object = json.dumps(json_object, indent=4)   
+    return data_object
 
 
-def obtain_temp_statistics(client,session, name, start_date, end_date, above_thr, below_thr):
+def obtain_temp_statistics(client,session,bbdd, name, start_date, end_date, above_thr, below_thr):
    
-    _, lat, lon = search_data_city(name, session)
+    if not bbdd:
+        _, lat, lon = search_data_city(name, session)
+        if lat == lon == float(0) :
+            return 0
+    else:
+        data = json.loads(bbdd)
+        lat = data.get("latitude")
+        lon = data.get("longitude")
     params_statistics = {
         "latitude": lat,
         "longitude": lon,
@@ -151,9 +176,17 @@ def obtain_temp_statistics(client,session, name, start_date, end_date, above_thr
     print(json.dumps(json_object, indent=4))
 
 
-def obtain_prec_statistics(client,session, name, start_date, end_date):
+def obtain_prec_statistics(client,session,bbdd, name, start_date, end_date):
     
-    _, lat, lon = search_data_city(name, session)
+    if not bbdd:
+        _, lat, lon = search_data_city(name, session)
+        if lat == lon == float(0) :
+            return 0
+    else:
+        data = json.loads(bbdd)
+        lat = data.get("latitude")
+        lon = data.get("longitude")   
+         
     params_statistics = {
         "latitude": lat,
         "longitude": lon,
