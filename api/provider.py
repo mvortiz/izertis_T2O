@@ -1,7 +1,7 @@
 import openmeteo_requests
 
 import pandas as pd
-import numpy
+import numpy as np
 import json
 import requests_cache
 from retry_requests import retry
@@ -60,8 +60,8 @@ def get_hourly_weater(client, session, name, start_date, end_date):
     responses = client.weather_api(ARCHIVE_PATH, params = params_hourly)
     response = responses[0]
     hourly = response.Hourly()
-    temp = hourly.Variables(0).ValuesAsNumpy()
-    precip = hourly.Variables(1).ValuesAsNumpy()
+    temp = hourly.Variables(0).ValuesAsnp()
+    precip = hourly.Variables(1).ValuesAsnp()
     
     date = pd.date_range(
 	start = pd.to_datetime(hourly.Time(), unit = "s", utc = True),
@@ -81,8 +81,8 @@ def get_hourly_weater(client, session, name, start_date, end_date):
     date_list = date.strftime("%Y-%m-%dT%H:%M").tolist()
     weather_info = {}
     for key, tp, pp in zip(date_list, temp, precip):
-        t = "{:.2f}".format(numpy.float64.item(tp))
-        p = "{:.2f}".format(numpy.float64.item(pp))
+        t = "{:.2f}".format(np.float64.item(tp))
+        p = "{:.2f}".format(np.float64.item(pp))
         weather_info.setdefault(key, []).append(({"temperature":t, "precipitations": p}))
         
     data = {
@@ -119,13 +119,13 @@ def obtain_temp_statistics(client,session,bbdd, name, start_date, end_date, abov
     response = responses[0]
     
     daily = response.Daily()
-    mean = daily.Variables(0).ValuesAsNumpy().tolist()
-    max = daily.Variables(1).ValuesAsNumpy()
-    min = daily.Variables(2).ValuesAsNumpy()
+    mean = daily.Variables(0).ValuesAsnp().tolist()
+    max = daily.Variables(1).ValuesAsnp()
+    min = daily.Variables(2).ValuesAsnp()
     hourly = response.Hourly()
-    temps = hourly.Variables(0).ValuesAsNumpy()
+    temps = hourly.Variables(0).ValuesAsnp()
     
-    average = numpy.mean(temps)
+    average = np.mean(temps)
     
     date_daily_range = pd.date_range(
 	start = pd.to_datetime(daily.Time(), unit = "s", utc = True),
@@ -146,25 +146,25 @@ def obtain_temp_statistics(client,session,bbdd, name, start_date, end_date, abov
     date_min_dict = { d: m for d, m in zip(datetime_list, min)}
     date_mean_dict = { d: m for d, m in zip(date_list, mean)}
 
-    max_temp = numpy.max(temps)
+    max_temp = np.max(temps)
     date_max_temp = [k for k, v in date_max_dict.items() if v == max_temp][0]
  
-    min_temp = numpy.min(min)
+    min_temp = np.min(min)
     date_min_temp = [k for k, v in date_min_dict.items() if v == min_temp][0]
 
-    above_temp = len(numpy.where(max > float(above_thr))[0])
-    below_temp = len(numpy.where(min < float(below_thr))[0])
+    above_temp = len(np.where(max > float(above_thr))[0])
+    below_temp = len(np.where(min < float(below_thr))[0])
     
     temp_stat = {
         "temperature":{
-            "average": "{:.2f}".format(numpy.float64.item(average)),
+            "average": "{:.2f}".format(np.float64.item(average)),
             "average_by_day": date_mean_dict,
             "max": {
-                "value": "{:.2f}".format(numpy.float64.item(max_temp)),
+                "value": "{:.2f}".format(np.float64.item(max_temp)),
                 "date_time": date_max_temp
             },
             "min": {
-                "value": "{:.2f}".format(numpy.float64.item(min_temp)),
+                "value": "{:.2f}".format(np.float64.item(min_temp)),
                 "date_time": date_min_temp
             },
             "hours_above_threshold": above_temp,
@@ -197,9 +197,9 @@ def obtain_prec_statistics(client,session,bbdd, name, start_date, end_date):
     responses = client.weather_api(ARCHIVE_PATH, params = params_statistics)
     response = responses[0]
     hourly = response.Hourly()
-    precs = hourly.Variables(0).ValuesAsNumpy().tolist()
+    precs = hourly.Variables(0).ValuesAsnp().tolist()
     
-    total = numpy.sum(precs)
+    total = np.sum(precs)
   
     date_hourly_range = pd.date_range(
 	start = pd.to_datetime(hourly.Time(), unit = "s", utc = True),
@@ -217,7 +217,7 @@ def obtain_prec_statistics(client,session,bbdd, name, start_date, end_date):
     
     days_with_prec = sum(1 for value in date_total_prec_dict.values() if value > 0)
     
-    max_prec = numpy.max(precs)
+    max_prec = np.max(precs)
     date_max_precp = [k for k, v in all_prec_by_day_dict.items() if max_prec in v][0]
     
     values = date_total_prec_dict.values()
@@ -229,7 +229,7 @@ def obtain_prec_statistics(client,session,bbdd, name, start_date, end_date):
             "total_by_day": date_total_prec_dict,
             "days_with_precipitation": days_with_prec,
             "max": {
-                "value": "{:.2f}".format(numpy.float64.item(max_prec)),
+                "value": "{:.2f}".format(np.float64.item(max_prec)),
                 "date_time": date_max_precp
             },
             "average": "{:.2f}".format(average)
